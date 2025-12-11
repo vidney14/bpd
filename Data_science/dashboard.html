@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>BPD Overtime Dashboard</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Exploratory data analysis of Boston Police overtime and pay patterns using 2024 earnings data." />
+
+  <!-- Bootstrap -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      background: #020617;
+      color: #e5e7eb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .navbar {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+    }
+
+    .navbar-brand {
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .nav-link {
+      color: #cbd5f5 !important;
+      font-size: 0.95rem;
+    }
+
+    .nav-link.active {
+      color: #38bdf8 !important;
+      font-weight: 600;
+    }
+
+    .card,
+    .card-plain {
+      border-radius: 1.4rem;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: radial-gradient(circle at top left, #1f2937, #020617);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.85);
+    }
+
+    .card-plain {
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    .hero-title {
+      font-size: 2.1rem;
+      font-weight: 800;
+      color: #f9fafb;
+    }
+
+    .small-muted {
+      font-size: 0.82rem;
+      color: #d1d5db;
+    }
+
+    .metric-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #cbd5f5;
+    }
+
+    .metric-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .metric-sub {
+      font-size: 0.78rem;
+      color: #e5e7eb;
+    }
+
+    .chart-card-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #cbd5f5;
+      margin-bottom: 0.25rem;
+    }
+
+    a {
+      color: #38bdf8;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand text-light" href="/">
+        BPD Budget & Payroll analysis
+      </a>
+      <button
+        class="navbar-toggler text-light border-0"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#navbarNav"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto align-items-lg-center">
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="/dashboard">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/model">ML Model</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="container py-5">
+    <!-- Header -->
+    <section class="mb-4">
+      <div class="row g-4 align-items-stretch">
+        <div class="col-lg-7">
+          <div class="card p-4 h-100">
+            <div class="card-body">
+              <div class="section-title mb-2">Exploratory Dashboard</div>
+              <h1 class="hero-title mb-3">Boston Police Overtime & Pay Patterns (2024)</h1>
+              <p class="small-muted mb-2">
+                This dashboard summarises overtime and pay components using the
+                2024 Employee Earnings Report after cleaning. All charts are based on
+                <code>cleaned_police_overtime_data.csv</code> and focus on comparing
+                the Boston Police Department with other city departments.
+              </p>
+              <p class="small-muted mb-0">
+                Key questions: How does BPD’s pay mix differ from other departments?
+                Who are the highest earners? How tightly is overtime linked to regular,
+                retro and injury pay?
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="card-plain p-4 h-100">
+            <div class="section-title mb-3">Snapshot</div>
+            <div class="row text-center gy-3">
+              <div class="col-6">
+                <div class="metric-label">Total employees</div>
+                <div class="metric-value">14,057</div>
+                <div class="metric-sub">All departments (2024)</div>
+              </div>
+              <div class="col-6">
+                <div class="metric-label">BPD employees</div>
+                <div class="metric-value">2,182</div>
+                <div class="metric-sub">Boston Police Department</div>
+              </div>
+              <div class="col-6">
+                <div class="metric-label mt-3">Mean OT (all)</div>
+                <div class="metric-value">$25,004</div>
+                <div class="metric-sub">Median ≈ $24,261</div>
+              </div>
+              <div class="col-6">
+                <div class="metric-label mt-3">Mean OT (BPD)</div>
+                <div class="metric-value">$38,332</div>
+                <div class="metric-sub">Median ≈ $31,627</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pay mix vs other departments -->
+    <section class="mt-3">
+      <div class="row g-4">
+        <div class="col-lg-7">
+          <div class="card-plain p-4 h-100">
+            <div class="chart-card-title">Average pay mix per officer</div>
+            <p class="small-muted mb-3">
+              Comparison of the average pay components for Boston Police officers
+              versus all other departments. Values are per-employee averages in USD,
+              computed from the cleaned dataset.
+            </p>
+            <canvas id="payMixChart" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="card p-4 h-100">
+            <div class="chart-card-title">Interpretation</div>
+            <p class="small-muted mb-2">
+              For 2024, Boston Police officers have:
+            </p>
+            <ul class="small-muted mb-2">
+              <li>Higher average <strong>overtime</strong> than other departments.</li>
+              <li>Similar levels of <strong>regular</strong> pay.</li>
+              <li>Notable amounts of <strong>detail</strong> and <strong>injury</strong> pay, reflecting the nature of police work.</li>
+            </ul>
+            <p class="small-muted mb-0">
+              All numbers are calculated directly from
+              <code>cleaned_police_overtime_data.csv</code>, filtered by
+              <code>DEPARTMENT_NAME = "Boston Police Department"</code>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Top 10 earners -->
+    <section class="mt-4">
+      <div class="card-plain p-4">
+        <div class="chart-card-title">Top 10 highest paid BPD officers (total pay)</div>
+        <p class="small-muted mb-3">
+          Total pay is computed as the sum of regular, retro, overtime, detail,
+          injury and other pay components. Names and values are taken directly
+          from the cleaned BPD subset.
+        </p>
+        <canvas id="topEarnersChart" height="180"></canvas>
+      </div>
+    </section>
+
+    <!-- Scatter + correlation -->
+    <section class="mt-4 mb-5">
+      <div class="row g-4">
+        <div class="col-lg-7">
+          <div class="card-plain p-4 h-100">
+            <div class="chart-card-title">Regular pay vs overtime (sample of BPD officers)</div>
+            <p class="small-muted mb-3">
+              Each point represents one Boston Police officer from a sample of the
+              2024 dataset. Both axes use real values of regular and overtime pay.
+            </p>
+            <canvas id="scatterChart" height="220"></canvas>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="card p-4 h-100">
+            <div class="chart-card-title">Correlation with overtime</div>
+            <p class="small-muted mb-2">
+              Pearson correlation coefficients between overtime and each pay
+              component, calculated from the full cleaned dataset.
+            </p>
+            <canvas id="corrChart" height="160"></canvas>
+            <p class="small-muted mt-3 mb-0">
+              Overtime is most strongly associated with <strong>retro pay</strong>
+              and <strong>regular pay</strong>, while <strong>injury pay</strong>
+              is negatively correlated — officers with high injury pay tend to work
+              less overtime.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // ===== REAL DATA FROM cleaned_police_overtime_data.csv =====
+
+    // Pay mix (means per officer)
+    // Order: REGULAR, OVERTIME, DETAIL, OTHER, INJURED
+    const bpdMeans = [100188.53, 38331.64, 24657.42, 3693.36, 17663.5];
+    const nonBpdMeans = [97085.6, 22555.25, 21886.43, 3840.26, 20026.13];
+    const componentLabels = ["Regular", "Overtime", "Detail", "Other", "Injury"];
+
+    // Top 10 BPD earners (total pay)
+    const topNames = [
+      "Demesmin,Stanley",
+      "Connolly,Timothy",
+      "Danilecki,John H",
+      "Hegarty,Michael J",
+      "Sweeney,Steven",
+      "Lanchester,Wayne",
+      "Blando,Carl",
+      "Assad,Mark L",
+      "McCarthy,Michael P",
+      "Brown,Michael A"
+    ];
+    const topTotals = [
+      543321.75,
+      506241.64,
+      500083.97,
+      497458.87,
+      481204.25,
+      475272.99,
+      459212.78,
+      449832.9,
+      442450.05,
+      431716.05
+    ];
+
+    // Scatter sample (120 real BPD officers)
+    const scatterRegular = [
+      120786.6,131967.71,85444.93,86409.22,121732.95,117919.87,121152.81,43312.55,76128.26,15593.74,
+      101493.91,123555.74,99739.66,118923.93,102279.25,109540.57,94326.38,107479.54,72911.98,109104.3,
+      78702.65,108852.61,111421.28,109806.73,93986.37,118829.99,102982.58,109030.81,109964.18,103620.84,
+      115385.81,109535.84,110116.34,121615.06,97072.42,110453.1,111043.64,116965.32,115086.49,139159.99,
+      104894.25,93967.99,86319.38,109572.36,53956.94,109375.56,110522.58,101707.77,99339.06,103051.07,
+      115183.54,104511.19,107690.42,89180.82,105109.54,64859.08,117338.68,104969.42,107191.37,116164.8,
+      111329.82,84509.0,69596.67,118786.21,104632.1,89198.53,109747.52,102634.68,107034.25,121283.02,
+      109835.06,108527.63,101031.94,96490.37,121889.89,108305.44,96555.57,110347.0,122248.58,115762.63,
+      115422.89,110975.48,98006.35,105994.75,107756.95,102911.2,104356.46,110507.15,104373.97,92480.23,
+      96954.68,107555.64,110189.9,110774.05,114489.43,108342.12,121313.09,112931.77,111677.98,108284.86,
+      87374.37,111837.93,115693.42,104575.93,115837.52,114446.36,99320.25,104101.49,105744.71,111411.01,
+      116180.51,121951.49,102098.5,117735.08,104227.31,102130.81,120339.72,107269.73,110322.24,107030.21
+    ];
+    const scatterOvertime = [
+      95610.03,63709.71,48547.88,47812.87,26632.47,47018.43,74718.19,340.5,1287.42,5306.71,
+      33786.11,39154.11,24636.41,46834.61,34968.47,49617.42,33999.18,53439.76,41934.44,42266.79,
+      33015.32,37738.33,78074.81,79910.23,29923.11,42138.8,18253.95,47732.95,32429.67,50297.71,
+      30329.17,31937.36,42097.27,40132.51,22696.44,53144.93,45756.63,38109.95,47644.69,37705.78,
+      23954.09,41567.74,33416.71,40757.0,33060.04,28075.34,41006.31,43064.9,33882.3,39543.38,
+      37855.13,37774.88,41305.23,28516.31,34334.98,33110.27,40707.97,32333.44,28858.41,31082.66,
+      40932.49,22217.73,26871.39,32131.27,40199.83,32794.19,33669.38,35272.97,32857.03,50763.05,
+      39925.23,36145.18,29320.63,29292.13,34346.31,39144.35,44565.62,32702.61,39966.95,43596.2,
+      37948.97,34144.75,29079.39,36361.28,38151.67,35426.38,26550.39,34027.57,35153.78,35465.85,
+      38772.07,33292.13,35353.03,37414.06,29376.16,33392.52,30373.23,32732.45,39546.94,33702.65,
+      40961.66,33056.14,33208.0,31727.2,29377.18,31071.24,37044.27,35332.21,29293.41,40448.71,
+      37327.06,38078.0,31438.18,33182.63,39846.02,41599.55,30557.35,37541.45,26063.42,33871.16
+    ];
+
+    // Correlation with overtime
+    const corrFeatures = ["REGULAR", "RETRO", "OTHER", "INJURED", "DETAIL"];
+    const corrValues = [0.61, 0.80, 0.16, -0.63, 0.14];
+
+    // ===== CHARTS =====
+
+    // Pay mix stacked bar
+    const payMixCtx = document.getElementById("payMixChart").getContext("2d");
+    new Chart(payMixCtx, {
+      type: "bar",
+      data: {
+        labels: ["Boston Police Dept", "Other Departments"],
+        datasets: [
+          {
+            label: "Regular",
+            data: [bpdMeans[0], nonBpdMeans[0]],
+            borderWidth: 1.5
+          },
+          {
+            label: "Overtime",
+            data: [bpdMeans[1], nonBpdMeans[1]],
+            borderWidth: 1.5
+          },
+          {
+            label: "Detail",
+            data: [bpdMeans[2], nonBpdMeans[2]],
+            borderWidth: 1.5
+          },
+          {
+            label: "Other",
+            data: [bpdMeans[3], nonBpdMeans[3]],
+            borderWidth: 1.5
+          },
+          {
+            label: "Injury",
+            data: [bpdMeans[4], nonBpdMeans[4]],
+            borderWidth: 1.5
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            labels: { color: "#e5e7eb", font: { size: 11 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y.toLocaleString()}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            ticks: { color: "#cbd5f5" },
+            grid: { display: false }
+          },
+          y: {
+            stacked: true,
+            ticks: {
+              color: "#cbd5f5",
+              callback: (val) => "$" + val / 1000 + "k"
+            },
+            grid: { color: "rgba(75,85,99,0.25)" }
+          }
+        }
+      }
+    });
+
+    // Top 10 earners bar
+    const topCtx = document.getElementById("topEarnersChart").getContext("2d");
+    new Chart(topCtx, {
+      type: "bar",
+      data: {
+        labels: topNames,
+        datasets: [
+          {
+            label: "Total pay (USD)",
+            data: topTotals,
+            borderWidth: 1.5
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            labels: { color: "#e5e7eb", font: { size: 11 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => "$" + ctx.parsed.y.toLocaleString()
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: "#cbd5f5",
+              maxRotation: 60,
+              minRotation: 60,
+              font: { size: 10 }
+            },
+            grid: { display: false }
+          },
+          y: {
+            ticks: {
+              color: "#cbd5f5",
+              callback: (val) => "$" + val / 1000 + "k"
+            },
+            grid: { color: "rgba(75,85,99,0.25)" }
+          }
+        }
+      }
+    });
+
+    // Scatter regular vs overtime
+    const scatterPoints = scatterRegular.map((r, i) => ({
+      x: r,
+      y: scatterOvertime[i]
+    }));
+
+    const scatterCtx = document.getElementById("scatterChart").getContext("2d");
+    new Chart(scatterCtx, {
+      type: "scatter",
+      data: {
+        datasets: [
+          {
+            label: "BPD officers (2024 sample)",
+            data: scatterPoints,
+            pointRadius: 3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            labels: { color: "#e5e7eb", font: { size: 11 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) =>
+                `Regular: $${ctx.parsed.x.toLocaleString()}, OT: $${ctx.parsed.y.toLocaleString()}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: { display: true, text: "Regular pay ($)", color: "#cbd5f5" },
+            ticks: {
+              color: "#cbd5f5",
+              callback: (val) => "$" + val / 1000 + "k"
+            },
+            grid: { color: "rgba(55,65,81,0.25)" }
+          },
+          y: {
+            title: { display: true, text: "Overtime ($)", color: "#cbd5f5" },
+            ticks: {
+              color: "#cbd5f5",
+              callback: (val) => "$" + val / 1000 + "k"
+            },
+            grid: { color: "rgba(55,65,81,0.25)" }
+          }
+        }
+      }
+    });
+
+    // Correlation with overtime
+    const corrCtx = document.getElementById("corrChart").getContext("2d");
+    new Chart(corrCtx, {
+      type: "bar",
+      data: {
+        labels: corrFeatures,
+        datasets: [
+          {
+            label: "Correlation with overtime",
+            data: corrValues,
+            borderWidth: 1.5
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            labels: { color: "#e5e7eb", font: { size: 11 } }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: "#cbd5f5" },
+            grid: { display: false }
+          },
+          y: {
+            ticks: { color: "#cbd5f5" },
+            grid: { color: "rgba(75,85,99,0.25)" },
+            suggestedMin: -1,
+            suggestedMax: 1
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

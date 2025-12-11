@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>BPD Overtime Prediction | ML Model</title>
+
+  <!-- Meta -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Machine learning based overtime prediction for Boston Police Department officers, using 2024 earnings data." />
+
+  <!-- Bootstrap CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      background: #020617;
+      color: #e5e7eb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+
+    .navbar {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+    }
+
+    .navbar-brand {
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .nav-link {
+      color: #cbd5f5 !important;
+      font-size: 0.95rem;
+    }
+
+    .nav-link.active {
+      color: #38bdf8 !important;
+      font-weight: 600;
+    }
+
+    .card {
+      border-radius: 1.4rem;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: radial-gradient(circle at top left, #1f2937, #020617);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.85);
+    }
+
+    .card-plain {
+      background: rgba(15, 23, 42, 0.92);
+      border-radius: 1.4rem;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      box-shadow: 0 18px 35px rgba(15, 23, 42, 0.75);
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #c9d5eb;
+      font-weight: 600;
+    }
+
+    .hero-title {
+      font-size: 2.1rem;
+      font-weight: 700;
+    }
+
+    .metric-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #c7d0e1;
+    }
+
+    .metric-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .metric-sub {
+      font-size: 0.78rem;
+      color: #9ca3af;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.8);
+      margin-right: 0.35rem;
+      gap: 0.3rem;
+    }
+
+    .pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+    }
+
+    .pill-primary .pill-dot {
+      background: #38bdf8;
+    }
+
+    .pill-secondary .pill-dot {
+      background: #22c55e;
+    }
+
+    .pill-warning .pill-dot {
+      background: #f97316;
+    }
+
+    .input-group-text {
+      background: #020617;
+      color: #9ca3af;
+      border-color: #1f2937;
+    }
+
+    .form-control {
+      background: #020617;
+      border-color: #1f2937;
+      color: #e5e7eb;
+      font-size: 0.95rem;
+    }
+
+    .form-control::placeholder {
+      color: #6b7280;
+    }
+
+    .form-control:focus {
+      background: #020617;
+      color: #e5e7eb;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 0.15rem rgba(56, 189, 248, 0.25);
+    }
+
+    .btn-primary {
+      background: linear-gradient(to right, #38bdf8, #6366f1);
+      border: none;
+      border-radius: 999px;
+      padding-inline: 1.8rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(to right, #0ea5e9, #4f46e5);
+    }
+
+    .predicted-value {
+      font-size: 2.3rem;
+      font-weight: 800;
+      color: #22c55e;
+    }
+
+    .badge-band {
+      font-size: 0.75rem;
+      border-radius: 999px;
+      padding: 0.2rem 0.7rem;
+    }
+
+    .badge-low {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+    }
+
+    .badge-typical {
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.4);
+    }
+
+    .badge-high {
+      background: rgba(234, 179, 8, 0.15);
+      color: #facc15;
+      border: 1px solid rgba(234, 179, 8, 0.45);
+    }
+
+    .badge-extreme {
+      background: rgba(248, 113, 113, 0.15);
+      color: #fca5a5;
+      border: 1px solid rgba(248, 113, 113, 0.45);
+    }
+
+    a {
+      color: #38bdf8;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .small-muted {
+      font-size: 0.8rem;
+      color: #cedaee;
+    }
+
+    .chart-card-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9ca3af;
+      margin-bottom: 0.25rem;
+    }
+    /* === BRIGHT TYPOGRAPHY OVERRIDES === */
+
+    .section-title {
+      color: #38bdf8 !important;      /* cyan accent */
+      font-weight: 700;
+    }
+
+    .hero-title {
+      color: #f9fafb !important;      /* soft white */
+      font-weight: 800;
+      font-size: 2.3rem;
+    }
+
+    .card h3,
+    .card .h4 {
+      color: #f9fafb !important;      /* same bright white */
+      font-weight: 700;
+    }
+
+    .card p,
+    .text-secondary,
+    .small-muted {
+      color: #e5e7eb !important;      /* light gray, almost white */
+    }
+
+    .metric-label,
+    .metric-sub {
+      color: #d1d5db !important;
+    }
+
+    .chart-card-title {
+      color: #cbd5f5 !important;
+    }
+    /* === Brighten form labels & SHAP section === */
+
+    .form-label {
+      color: #f9fafb !important;      /* soft white */
+      font-weight: 600;
+    }
+
+    .input-group-text {
+      color: #e5e7eb !important;      /* light gray */
+      background: #020617;
+      border-color: #1f2937;
+    }
+
+    .chart-card-title {
+      color: #f9fafb !important;      /* bright white */
+      font-weight: 700;
+    }
+
+    section:last-of-type .small-muted {
+      color: #e5e7eb !important;      /* light, readable gray */
+    }
+    * .chart-card-title,
+    .chart-card-title,
+    .card * .chart-card-title {
+      color: #f9fafb !important;
+    }
+    /* === Brighten pill button text === */
+    .pill {
+      color: #f9fafb !important;         /* bright white text */
+      border-color: rgba(148, 163, 184, 0.6) !important;
+    }
+
+    .pill .pill-dot {
+      opacity: 1 !important;
+    }
+    .pill:hover {
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+    }
+
+  </style>
+</head>
+<body>
+  <!-- EARLY SCRIPT: prevents browser validation bubble before inputs render -->
+  <script>
+    (function earlyNumberPatch(){
+      try {
+        function patch(inp){
+          try {
+            inp.setAttribute('step','any');
+            inp.setAttribute('inputmode','decimal');
+            inp.removeAttribute('min');
+            inp.removeAttribute('max');
+            inp.removeAttribute('required');
+            if (inp.hasAttribute('pattern')) inp.removeAttribute('pattern');
+            // ensure any custom validity is cleared
+            try { inp.setCustomValidity(''); } catch(e){}
+            inp.addEventListener('input', ()=> { try { inp.setCustomValidity(''); } catch(e){} }, {passive:true});
+            inp.addEventListener('invalid', (ev)=> { try { ev.preventDefault(); inp.setCustomValidity(''); } catch(e){} }, false);
+            inp.addEventListener('wheel', (e)=> { try { e.preventDefault(); } catch(e){} }, {passive:false});
+          } catch(e){}
+        }
+        // patch existing inputs
+        document.querySelectorAll && document.querySelectorAll('input[type="number"]').forEach(patch);
+        // watch for late inserts
+        if (window.MutationObserver) {
+          const mo = new MutationObserver(records=>{
+            for (const r of records) {
+              for (const n of r.addedNodes) {
+                if (!n) continue;
+                if (n.nodeType !== 1) continue;
+                if (n.matches && n.matches('input[type="number"]')) patch(n);
+                if (n.querySelectorAll) n.querySelectorAll('input[type="number"]').forEach(patch);
+              }
+            }
+          });
+          mo.observe(document.documentElement || document.body, { childList:true, subtree:true });
+          setTimeout(()=>mo.disconnect(), 3000);
+        }
+      } catch(e){}
+    })();
+  </script>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand text-light" href="/">
+        BPD Budget & Payroll analysis
+      </a>
+      <button
+        class="navbar-toggler text-light border-0"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#navbarNav"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto align-items-lg-center">
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/dashboard">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="/model">ML Model</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="container py-5">
+    <!-- Hero / Summary -->
+    <section class="mb-4">
+      <div class="row g-4 align-items-stretch">
+        <div class="col-lg-7">
+          <div class="card p-4 h-100">
+            <div class="card-body">
+              <div class="section-title mb-2">Machine Learning Model</div>
+              <h1 class="hero-title mb-3">
+                Overtime Expenditure Prediction for BPD Officers
+              </h1>
+              <p class="text-secondary mb-3">
+                Using the <strong>2024 Employee Earnings data</strong> for
+                <strong>14,057 Boston employees</strong>, we trained multiple
+                regression models to predict an officer's
+                <strong>overtime pay</strong> based on compensation components
+                such as regular, retro, injury, detail and other pay.
+              </p>
+              <p class="text-secondary mb-3">
+                XGBoost achieved the best performance in our experiments, with
+                <strong>R² ≈ 0.82</strong> and
+                <strong>MAE ≈ \$2,756</strong> on the test split.
+                Random Forest and Linear Regression were used as baselines.
+                The web demo below implements a calibrated approximation of the
+                XGBoost relationships so that interactive predictions are
+                consistent with the distribution of the real model.
+              </p>
+              <div class="d-flex flex-wrap gap-2 mt-1">
+                <span class="pill pill-primary">
+                  <span class="pill-dot"></span>
+                  XGBoost (primary model)
+                </span>
+                <span class="pill pill-secondary">
+                  <span class="pill-dot"></span>
+                  Random Forest & Linear Regression baselines
+                </span>
+                <span class="pill pill-warning">
+                  <span class="pill-dot"></span>
+                  SHAP-based explainability
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dataset metrics -->
+        <div class="col-lg-5">
+          <div class="card-plain p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="section-title mb-0">Dataset Snapshot (2024)</div>
+              <span class="badge rounded-pill text-bg-dark border border-secondary">
+                cleaned_police_overtime_data.csv
+              </span>
+            </div>
+
+            <div class="row text-center gy-3">
+              <div class="col-6">
+                <div class="metric-label">Mean Overtime</div>
+                <div class="metric-value">$25,004</div>
+                <div class="metric-sub">Median ≈ $24,261</div>
+              </div>
+              <div class="col-6">
+                <div class="metric-label">Range</div>
+                <div class="metric-value small">
+                  $2 ⟶ $223k
+                </div>
+                <div class="metric-sub">
+                  Long right tail of extreme earners
+                </div>
+              </div>
+              <div class="col-12 mt-2">
+                <div class="metric-label">Overtime Bands (officers)</div>
+                <div class="d-flex flex-wrap justify-content-center gap-2 mt-1 small-muted">
+                  <span>Low (&lt; 10k): <strong>23.9%</strong></span>
+                  <span>· Typical (10k–30k): <strong>37.3%</strong></span>
+                  <span>· High (30k–50k): <strong>33.3%</strong></span>
+                  <span>· Extreme (&gt; 50k): <strong>5.4%</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <hr class="border-secondary my-3" />
+            <p class="small-muted mb-0">
+              All statistics are computed directly from
+              <code>cleaned_police_overtime_data.csv</code> (n = 14,057).
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Prediction & Charts -->
+    <section class="mt-3">
+      <div class="row g-4">
+        <!-- Prediction form -->
+        <div class="col-lg-5">
+          <div class="card p-4 h-100">
+            <div class="card-body">
+              <div class="section-title mb-2">Interactive Predictor</div>
+              <h3 class="h4 mb-3">Estimate an Officer's Overtime</h3>
+              <p class="small-muted mb-4">
+                Enter pay components for a hypothetical officer.
+                The rule below is tuned with the 2024 data so that increasing
+                <strong>regular</strong> and <strong>retro</strong> pay tends
+                to increase predicted overtime, while large
+                <strong>injury</strong> pay reduces it.
+              </p>
+              <!-- Presets -->
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <button class="btn btn-sm btn-outline-light rounded-pill" type="button" onclick="setPreset('low')">
+                  Patrol Officer (Low OT)
+                </button>
+                <button class="btn btn-sm btn-outline-info rounded-pill" type="button" onclick="setPreset('typical')">
+                  Typical Officer
+                </button>
+                <button class="btn btn-sm btn-outline-warning rounded-pill" type="button" onclick="setPreset('high')">
+                  High OT Earner
+                </button>
+              </div>
+
+              <form id="predictionForm" novalidate onsubmit="event.preventDefault(); predictOvertime();">
+
+                <!-- Regular Pay -->
+                <div class="mb-3">
+                  <label class="form-label">Regular Pay ($)</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" inputmode="decimal" class="form-control" id="regularPay" name="REGULAR" value="102279" step="any">
+                  </div>
+                </div>
+
+                <!-- Retro Pay -->
+                <div class="mb-3">
+                  <label class="form-label">Retro Pay ($)</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" inputmode="decimal" class="form-control" id="retroPay" name="RETRO" value="16504" step="any">
+                  </div>
+                </div>
+
+                <!-- Injury Pay -->
+                <div class="mb-3">
+                  <label class="form-label">Injury Pay ($)</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" inputmode="decimal" class="form-control" id="injuryPay" name="INJURED" value="18007" step="any">
+                  </div>
+                </div>
+
+                <!-- Other Pay -->
+                <div class="mb-3">
+                  <label class="form-label">Other Pay ($)</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" inputmode="decimal" class="form-control" id="otherPay" name="OTHER" value="1472" step="any">
+                  </div>
+                </div>
+
+                <!-- Detail Pay -->
+                <div class="mb-3">
+                  <label class="form-label">Detail Pay ($)</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" inputmode="decimal" class="form-control" id="detailPay" name="DETAIL" value="22206" step="any">
+                  </div>
+                </div>
+
+                <!-- NEW: Postal -->
+                <div class="mb-3">
+                  <label class="form-label">Postal ZIP Code</label>
+                  <div class="input-group">
+                    <span class="input-group-text">ZIP</span>
+                    <input type="text" class="form-control" id="postal" name="POSTAL" placeholder="02108" value="02108">
+                  </div>
+                </div>
+
+                <!-- NEW: Title -->
+                <div class="mb-3">
+                  <label class="form-label">Officer Title</label>
+                  <input 
+                    list="titles" 
+                    class="form-control" 
+                    id="titleInput" 
+                    name="TITLE"
+                    placeholder="Police Lieutenant (Det)"
+                    value="Police Lieutenant (Det)">
+                  <datalist id="titles">
+                    <option value="Police Lieutenant (Det)"></option>
+                    <option value="Police Captain/DDC"></option>
+                    <option value="Police Captain"></option>
+                    <option value="Police Captain/DDC"></option>
+                    <option value="Police Sergeant (Det)"></option>
+                    <option value="Police Lieutenant"></option>
+                    <option value="Police Sergeant"></option>
+                    <option value="Police Detective"></option>
+                    <option value="Police Captain"></option>
+                  </datalist>
+                </div>
+
+                <!-- Predict Button -->
+                <button type="submit" class="btn btn-primary w-100 mt-1">Predict Overtime</button>
+              </form>
+
+              <hr class="border-secondary my-4" />
+
+              <!-- Inline status / errors for the form -->
+              <div id="formMessage" class="small-muted mb-3" aria-live="polite"></div>
+
+              <!-- Prediction result -->
+              <div>
+                <p class="small-muted mb-1">Predicted Overtime (approximate)</p>
+                <div id="predictedOvertime" class="predicted-value">
+                  $0
+                </div>
+                <div class="d-flex align-items-center gap-2 mt-2">
+                  <span class="small-muted">Overtime band:</span>
+                  <span id="overtimeBandBadge" class="badge-band badge-typical">
+                    Typical (10k – 30k)
+                  </span>
+                </div>
+                <p class="small-muted mt-3 mb-0">
+                  The front-end rule is calibrated on the same 2024 dataset used
+                  to train the XGBoost model, so predicted values fall into the
+                  same distribution of overtime as the real officers.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts card -->
+        <div class="col-lg-7">
+          <div class="card-plain p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="section-title mb-0">Overtime Distribution & Scenario</div>
+              <span class="badge rounded-pill text-bg-dark border border-secondary small">
+                Derived from 2024 BPD payroll
+              </span>
+            </div>
+            <p class="small-muted mb-3">
+              The charts below summarize how overtime is distributed across officers
+              and how strongly each pay component is correlated with overtime in
+              the cleaned dataset.
+            </p>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <div class="chart-card-title">Overtime bands (% of officers)</div>
+                <canvas id="overtimeBandChart" height="170"></canvas>
+              </div>
+              <div class="col-md-6">
+                <div class="chart-card-title">Correlation with overtime</div>
+                <canvas id="featureCorrChart" height="170"></canvas>
+                <p class="small-muted mt-2 mb-0">
+                  Retro pay shows the strongest positive correlation with overtime,
+                  while injury pay is negatively correlated, reflecting reduced
+                  ability to work extra hours when injured.
+                </p>
+              </div>
+            </div>
+
+            <hr class="border-secondary my-3" />
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="small-muted fw-semibold mb-2">
+                  Where does this officer sit?
+                </div>
+                <p class="small-muted mb-2" id="positionText">
+                  Use the form on the left to generate a prediction and see which
+                  overtime band this officer falls into relative to the 2024 force.
+                </p>
+                <p class="small-muted mb-0">
+                  This makes it easy to reason about an individual prediction
+                  in the context of the whole department: low, typical, high,
+                  or extreme overtime.
+                </p>
+              </div>
+              <div class="col-md-6">
+                <div class="small-muted fw-semibold mb-2">
+                  Model performance (test split)
+                </div>
+                <ul class="small-muted mb-1">
+                  <li>XGBoost: R² ≈ 0.820, MAE ≈ \$2,756</li>
+                  <li>Random Forest: R² ≈ 0.813, MAE ≈ \$2,839</li>
+                  <li>Linear Regression: R² ≈ 0.709, MAE ≈ \$4,421</li>
+                </ul>
+                <p class="small-muted mb-0">
+                  These scores are reported directly from
+                  <code>ML_Model_DS_Project.ipynb</code>.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Explainability -->
+    <section class="mt-5">
+      <div class="card p-4">
+        <div class="card-body">
+          <div class="section-title mb-2">Explainability & Responsible Use</div>
+          <h3 class="h4 mb-3">Interpreting Overtime Predictions with SHAP</h3>
+          <p class="small-muted mb-2">
+            To avoid treating the model as a black box, we used
+            <strong>SHAP (SHapley Additive exPlanations)</strong> on the XGBoost
+            model. SHAP decomposes each prediction into feature contributions:
+          </p>
+          <ul class="small-muted">
+            <li>
+              <strong>Retro</strong> and <strong>regular pay</strong> have the
+              largest positive impact on predicted overtime for high-earning officers.
+            </li>
+            <li>
+              High <strong>injury pay</strong> tends to push predictions down,
+              consistent with less capacity to work overtime while injured.
+            </li>
+            <li>
+              <strong>Detail</strong> and special payments help explain the
+              extreme outliers in the top 5% of overtime earners.
+            </li>
+          </ul>
+
+          <!-- SHAP images from your notebook -->
+          <div class="row g-3 mt-3">
+            <div class="col-md-6">
+              <div class="chart-card-title">SHAP summary plot</div>
+              <img src="assets/shap.png" class="img-fluid rounded border border-secondary" alt="SHAP summary plot for overtime model">
+              <p class="small-muted mt-2 mb-0">
+                Global importance of each feature for predicting overtime,
+                computed from the XGBoost model in
+                <code>ML_Model_DS_Project.ipynb</code>.
+              </p>
+            </div>
+            <div class="col-md-6">
+              <div class="chart-card-title">Example-level explanation</div>
+              <img src="assets/single.png" class="img-fluid rounded border border-secondary" alt="SHAP waterfall plot for a single officer">
+              <p class="small-muted mt-2 mb-0">
+                SHAP waterfall for an individual officer, showing how baseline
+                overtime is adjusted up or down by each pay component to reach
+                the final prediction.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bootstrap JS -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+  ></script>
+
+<script>
+  // ===== CONFIG FROM YOUR CSV DATA =====
+  const bandLabels = ["Low", "Typical", "High", "Extreme"];
+  const bandPercents = [23.9, 37.3, 33.3, 5.4];
+
+  const corrLabels = ["REGULAR", "RETRO", "OTHER", "INJURED", "DETAIL"];
+  const corrValues = [0.61, 0.80, 0.16, -0.63, 0.14];
+
+  // Band thresholds
+  const LOW_MAX = 10000;
+  const TYPICAL_MAX = 30000;
+  const HIGH_MAX = 50000;
+
+  // Enable backend integration — the script will only attempt backend calls
+  // if the page is served over http(s). When opening the file locally (file:///), origin will be "null" or protocol "file:".
+  const USE_BACKEND = true;
+  const isHttpOrigin = (typeof window !== 'undefined') && (window.location && (window.location.protocol === 'http:' || window.location.protocol === 'https:'));
+  const BASE_URL = isHttpOrigin ? window.location.origin : null;
+
+  if (!BASE_URL) {
+    // If not served over http(s), disable backend use so fetch won't try file:// paths
+    // (keeps behavior safe if someone accidentally opens file:///)
+    // Note: you chose Backend ON — ensure you open via http://127.0.0.1:5000/model
+  }
+
+  // ===== MODEL APPROXIMATION (CALIBRATED) =====
+  function computeOvertime(regular, retro, injury, other, detail) {
+    let overtime =
+      (0.18 * regular +
+        0.6 * retro +
+        0.05 * detail +
+        0.03 * other -
+        0.15 * injury) /
+        1.5 +
+      7000;
+
+    if (overtime < 0) overtime = 0;
+    if (overtime > 120000) overtime = 120000;
+    return overtime;
+  }
+
+  // ===== PRESETS =====
+  function setPreset(type) {
+    const r = document.getElementById("regularPay");
+    const re = document.getElementById("retroPay");
+    const inj = document.getElementById("injuryPay");
+    const oth = document.getElementById("otherPay");
+    const det = document.getElementById("detailPay");
+    const postal = document.getElementById("postal");
+    const title = document.getElementById("titleInput");
+
+    if (type === "low") {
+      r.value = 80000;
+      re.value = 8000;
+      inj.value = 5000;
+      oth.value = 800;
+      det.value = 12000;
+      postal.value = "02108";
+      title.value = "Police Lieutenant (Det)";
+    } else if (type === "typical") {
+      r.value = 102279;
+      re.value = 16504;
+      inj.value = 18007;
+      oth.value = 1472;
+      det.value = 22206;
+      postal.value = "02108";
+      title.value = "Police Lieutenant (Det)";
+    } else if (type === "high") {
+      r.value = 135000;
+      re.value = 25000;
+      inj.value = 6000;
+      oth.value = 6000;
+      det.value = 30000;
+      postal.value = "02108";
+      title.value = "Police Captain/DDC";
+    }
+
+    predictOvertime();
+  }
+
+  // ===== BAND INFO =====
+  function getBandInfo(value) {
+    if (value < LOW_MAX) {
+      return {
+        label: "Low (< $10k)",
+        className: "badge-band badge-low",
+        text: "Low overtime: below $10,000, in the lower quarter of the 2024 distribution.",
+      };
+    } else if (value < TYPICAL_MAX) {
+      return {
+        label: "Typical ($10k – $30k)",
+        className: "badge-band badge-typical",
+        text: "Typical overtime: the range where most BPD officers fall in 2024.",
+      };
+    } else if (value < HIGH_MAX) {
+      return {
+        label: "High ($30k – $50k)",
+        className: "badge-band badge-high",
+        text: "High overtime: upper-end earners who work significantly above typical levels.",
+      };
+    } else {
+      return {
+        label: "Extreme (> $50k)",
+        className: "badge-band badge-extreme",
+        text: "Extreme overtime: top ~5% of officers with very high overtime compensation.",
+      };
+    }
+  }
+
+  // ===== CHARTS =====
+  let bandChart;
+  let corrChart;
+
+  function initBandChart() {
+    const ctx = document.getElementById("overtimeBandChart").getContext("2d");
+    bandChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: bandLabels,
+        datasets: [
+          {
+            label: "% of officers in band (2024)",
+            data: bandPercents,
+            borderWidth: 1.5,
+            borderRadius: 8,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            labels: {
+              color: "#e5e7eb",
+              font: { size: 11 },
+            },
+          },
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: "#9ca3af",
+              font: { size: 11 },
+            },
+            grid: { display: false },
+          },
+          y: {
+            ticks: {
+              color: "#9ca3af",
+              font: { size: 11 },
+              callback: (value) => value + "%",
+            },
+            grid: { color: "rgba(75,85,99,0.2)" },
+            suggestedMax: 45,
+          },
+        },
+      },
+    });
+  }
+
+  function initCorrChart() {
+    const ctx = document.getElementById("featureCorrChart").getContext("2d");
+    corrChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: corrLabels,
+        datasets: [
+          {
+            label: "Correlation with overtime",
+            data: corrValues,
+            borderWidth: 1.5,
+            borderRadius: 8,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            labels: {
+              color: "#e5e7eb",
+              font: { size: 11 },
+            },
+          },
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: "#9ca3af",
+              font: { size: 11 },
+            },
+            grid: { display: false },
+          },
+          y: {
+            ticks: {
+              color: "#9ca3af",
+              font: { size: 11 },
+            },
+            grid: { color: "rgba(75,85,99,0.2)" },
+            suggestedMin: -1,
+            suggestedMax: 1,
+          },
+        },
+      },
+    });
+  }
+
+  function highlightBand(predicted) {
+    if (!bandChart) return;
+
+    const bandInfo = getBandInfo(predicted);
+    const index =
+      bandInfo.label.startsWith("Low")
+        ? 0
+        : bandInfo.label.startsWith("Typical")
+        ? 1
+        : bandInfo.label.startsWith("High")
+        ? 2
+        : 3;
+
+    const baseBorderWidth = bandChart.data.datasets[0].data.map(() => 1.5);
+    const baseBorderColor = bandChart.data.datasets[0].data.map(
+      () => "rgba(148,163,184,0.8)"
+    );
+    const baseBackground = bandChart.data.datasets[0].data.map(
+      () => "rgba(55,65,81,0.7)"
+    );
+
+    baseBorderWidth[index] = 3;
+    baseBorderColor[index] = "rgba(56,189,248,0.9)";
+    baseBackground[index] = "rgba(56,189,248,0.35)";
+
+    bandChart.data.datasets[0].borderWidth = baseBorderWidth;
+    bandChart.data.datasets[0].borderColor = baseBorderColor;
+    bandChart.data.datasets[0].backgroundColor = baseBackground;
+
+    bandChart.update();
+  }
+
+  // ===== HELPERS: load allowed titles and show messages =====
+  async function loadAllowedTitles() {
+    const msgEl = document.getElementById("formMessage");
+    try {
+      if (!USE_BACKEND || !BASE_URL) {
+        // No backend available — keep the static datalist entries you already had.
+        showFormMessage("Backend disabled — using local approximation. To enable server predictions, serve this page via http(s) and run the Flask app at http://localhost:5000.", true);
+        return;
+      }
+
+      const res = await fetch(`${BASE_URL}/allowed_titles`, { method: "GET" });
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const j = await res.json();
+      const list = document.getElementById("titles");
+      list.innerHTML = "";
+      (j.allowed_titles || []).forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t;
+        list.appendChild(opt);
+      });
+      showFormMessage("Loaded allowed titles from server.", false);
+    } catch (err) {
+      console.warn("Could not load allowed titles:", err);
+      showFormMessage("Could not load allowed titles from server. Using local examples. (See console for details.)", true);
+      // Keep USE_BACKEND true for now but allow predictOvertime to handle fetch failure and fallback.
+    }
+  }
+
+  function showFormMessage(html, isError = false) {
+    const el = document.getElementById("formMessage");
+    el.innerHTML = html;
+    el.style.color = isError ? "#fca5a5" : "#cbd5f5";
+  }
+
+  // ===== MAIN PREDICTION =====
+  async function predictOvertime() {
+    // gather numeric fields and coerce to numbers (no blocking validation)
+    const regular = Number(parseFloat(document.getElementById("regularPay").value) || 0);
+    const retro = Number(parseFloat(document.getElementById("retroPay").value) || 0);
+    const injury = Number(parseFloat(document.getElementById("injuryPay").value) || 0);
+    const other = Number(parseFloat(document.getElementById("otherPay").value) || 0);
+    const detail = Number(parseFloat(document.getElementById("detailPay").value) || 0);
+
+    // gather postal & title (allow empty if user wants)
+    const postalElem = document.getElementById("postal");
+    const titleElem = document.getElementById("titleInput");
+    const postal = postalElem ? postalElem.value.trim() : "";
+    const title = titleElem ? titleElem.value.trim() : "";
+
+    // No blocking validation — always proceed. Backend may reject unknown titles;
+    // client will fall back to local approximation on server errors.
+
+    // If backend usage is disabled or page not served over http(s), use local approximation
+    if (!USE_BACKEND || !BASE_URL) {
+      showFormMessage("Using local calibrated approximation (backend unavailable). To enable server predictions, open this page via http(s) and run the Flask app at http://localhost:5000.", true);
+      const predicted = computeOvertime(regular, retro, injury, other, detail);
+      renderPrediction(predicted);
+      return;
+    }
+
+    // Call backend /predict
+    try {
+      showFormMessage("Requesting prediction from server...");
+
+      const payload = {
+        REGULAR: regular,
+        RETRO: retro,
+        OTHER: other,
+        INJURED: injury,
+        DETAIL: detail,
+        POSTAL: postal,
+        TITLE: title,
+      };
+
+      const resp = await fetch(`${BASE_URL}/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      let j = null;
+      try { j = await resp.json(); } catch (e) { /* ignore */ }
+
+      if (!resp.ok) {
+        // server-side error — show helpful message and fallback to local
+        if (j && j.error === "unknown_title") {
+          let html = `<strong>Unknown TITLE:</strong> ${j.message || ""}<br/>`;
+          if (j.suggestions && j.suggestions.length) {
+            html += `<div>Suggestions:<ul>`;
+            j.suggestions.forEach(s => html += `<li style="margin-left:8px">${s}</li>`);
+            html += `</ul></div>`;
+          }
+          html += `<div class="small-muted">Allowed titles: ${j.allowed_count || "unknown"}</div>`;
+          showFormMessage(html, true);
+        } else {
+          const detail = j && j.message ? j.message : (resp.statusText || `HTTP ${resp.status}`);
+          showFormMessage(`Prediction API error: ${detail}. Falling back to local approximation.`, true);
+        }
+
+        // fallback to local approximation so the UI still works
+        const predicted = computeOvertime(regular, retro, injury, other, detail);
+        renderPrediction(predicted);
+        return;
+      }
+
+      if (!j || typeof j.prediction === "undefined") {
+        showFormMessage("Unexpected response from prediction API. Falling back to local approximation.", true);
+        const predicted = computeOvertime(regular, retro, injury, other, detail);
+        renderPrediction(predicted);
+        return;
+      }
+
+      const predicted = Number(j.prediction);
+      renderPrediction(predicted);
+      showFormMessage("Prediction returned from server.", false);
+    } catch (err) {
+      console.error("Prediction error:", err);
+      showFormMessage("Network or server error during prediction. Falling back to local approximation. (See console for details.)", true);
+      // fallback to local approximation
+      const predicted = computeOvertime(regular, retro, injury, other, detail);
+      renderPrediction(predicted);
+    }
+  }
+
+  // small helper to render predicted value + band + chart highlight
+  function renderPrediction(predicted) {
+    const formatted = predicted.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0,
+    });
+    document.getElementById("predictedOvertime").textContent = formatted;
+
+    const bandInfo = getBandInfo(predicted);
+    const badge = document.getElementById("overtimeBandBadge");
+    badge.textContent = bandInfo.label;
+    badge.className = bandInfo.className;
+
+    const posText = document.getElementById("positionText");
+    posText.textContent = bandInfo.text;
+
+    highlightBand(predicted);
+  }
+
+  // ===== INITIALIZE =====
+  window.addEventListener("DOMContentLoaded", () => {
+    initBandChart();
+    initCorrChart();
+    loadAllowedTitles(); // populate datalist from backend if available
+
+    // Safety patch again to ensure inputs have correct attributes
+    document.querySelectorAll('input[type="number"]').forEach(inp => {
+      try {
+        inp.setAttribute('step','any');
+        inp.setAttribute('inputmode','decimal');
+        inp.removeAttribute('min');
+        inp.removeAttribute('max');
+        inp.removeAttribute('required');
+        if (inp.hasAttribute('pattern')) inp.removeAttribute('pattern');
+        inp.addEventListener('invalid', (ev) => { try { ev.preventDefault(); inp.setCustomValidity(''); } catch(e) {} });
+        inp.addEventListener('input', () => { try { inp.setCustomValidity(''); } catch(e) {} });
+        inp.addEventListener('wheel', (e) => { try { e.preventDefault(); } catch(e) {} }, {passive:false});
+      } catch(e) { console.warn('safety patch failed', e); }
+    });
+
+    predictOvertime(); // run once with defaults
+  });
+</script>
+
+</body>
+</html>
