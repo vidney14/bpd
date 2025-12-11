@@ -11,7 +11,7 @@ This project analyzes the **Boston Police Department (BPD) budget and payroll da
 - Website Boston Police Department (BPD) Budget & Payroll Analysis explaining the workflow and predicting the overtime expenditure using machine learning models.
   
 ## Makefile
-Google Colab Makefile (Python Only – No Website)- Run all ipynb files except website in google colab
+Google Colab Makefile (Python Only – No Website)- Run all ipynb files except website in google colab 
 <br/>
 PYTHON = python3
 <br/>
