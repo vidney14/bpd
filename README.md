@@ -11,7 +11,7 @@ This project analyzes the **Boston Police Department (BPD) budget and payroll da
 - Website Boston Police Department (BPD) Budget & Payroll Analysis explaining the workflow and predicting the overtime expenditure using machine learning models.
   
 ## Makefile
-Google Colab Makefile (Python Only – No Website)
+Google Colab Makefile (Python Only – No Website)- Run all ipynb files except website in google colab
 <br/>
 PYTHON = python3
 <br/>
@@ -34,7 +34,7 @@ run:<br/>
 	@echo "Run your notebook or script manually in Google Colab."
 
 
-Makefile for Website (VS Code / Local Machine Terminal)<br/>
+Makefile for Website (VS Code / Local Machine Terminal)<br/> -  Execute in visual studio code 
 PIP = pip
 
 install:<br/>
@@ -49,7 +49,7 @@ install:<br/>
 run:<br/>
 	python app2.py
 
-## Workflow:
+## Workflow:(Run all ipynb files except website in google colab)(Additionally execute the website in visual studio code)
 1. Import the Employee Earnings Data (2024).
 2. Execute **Boston_Police_Overtime.ipynb** to produce the cleaned dataset **Cleaned_police_overtime_data.csv**.
 3. Run **data_visualization.ipynb** to generate visualizations and analytical summaries based on the cleaned 2024 dataset.
@@ -57,7 +57,8 @@ run:<br/>
 5. Import the Employee Earnings Data (2023).
 6. Execute **Boston_Police_Overtime_test.ipynb** to create the cleaned test dataset **Cleaned_data_test.csv**.
 7. Run **ML_Model_DS_test.ipynb** to assess the performance of **XGBoost** and **Random Forest Regressor** on the 2023 test data.
-8. Execute the project website featuring a dashboard, analytical insights, and an overtime cost prediction interface powered by the trained **XGBoost** model and **Cleaned_police_overtime_data.csv**.
+8. Execute the project website featuring a dashboard, analytical insights, and an overtime cost prediction interface powered by the trained **XGBoost** model and **Cleaned_police_overtime_data.csv** using visual studio code.
+
 
 ## Dataset and Dataset preprocessing 
 The analysis uses single dataset:  
